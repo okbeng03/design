@@ -1,0 +1,436 @@
+/*
+ * @Author      changbin.wangcb
+ * @Date        2013.08.06
+ * @Description design
+ */
+
+/* background */
+
+h2, h3, h4 {
+    font-family: "Microsoft Yahei";
+}
+h2 {
+    font-size: 16px;
+}
+h3, h4 {
+    font-size: 14px;
+}
+
+img {
+    max-width: none;
+}
+.nav {
+    background-color: #28292a;
+    height: 40px;
+}
+.nav h1.logo {
+    float: left;
+    background: url(http://img.china.alibaba.com/cms/upload/2013/141/168/1861141_1917015703.jpg) no-repeat left;
+    padding-left: 55px;
+    height: 40px;
+    line-height: 40px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+}
+.nav em.cut-off {
+    display: inline-block;
+    height: 18px;
+    vertical-align: middle;
+    border-right: 1px solid #030303;
+    border-left: 1px solid #45474a;
+}
+.nav .btn-black {
+    display: inline-block;
+    width: 65px;
+    height: 24px;
+    line-height: 24px;
+    border: 1px solid #28292a;
+    color: #d2d2d2;
+    text-align: center;
+}
+.nav .btn-black:hover {
+    background-color: #fff;
+    color: #e4e4e4;
+    border: 1px solid #000;
+    border-radius: 4px 4px 6px 6px;
+    background-color: #1d1d1d;
+    font-weight: bold;
+    box-shadow: 0 0 0 0, inset 0 2px 6px #000, 0 1px 0 #434445, 0 0 0 0;
+    text-decoration: none;
+}
+.nav .btn-disabled {
+    background: none;
+    color: #9d9d9d;
+}
+.nav .options {
+    padding: 7px 42px 6px;
+    border-right: 1px solid #030303;
+}
+.nav .options li {
+    float: left;
+}
+.nav .options .btn-black {
+    margin: 0 4px;
+}
+.nav .options .bar-a-submit {
+    background: #258ee0;
+    border-radius: 5px;
+    margin-left: 15px;
+    color: #fff;
+}
+
+#content {
+    position: relative;
+    padding-top: 40px;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.toolbox {
+    background: #f6f6f6;
+    position: relative;
+    float: right;
+    width: 266px;
+    height: 100%;
+    border:solid 1px #9f9f9f;
+    overflow: hidden;
+    z-index: 1;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -o-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.toolbox .content {
+    height: 100%;
+}
+.toolbox .f-tab-b {
+    padding-top:10px;
+    overflow: hidden;
+}
+.toolbox .f-tab-b .action{
+    padding:0 5px 6px;
+    text-align:right;
+}
+
+.main-stage {
+    background: #5b5b5b;
+    height: 100%;
+    overflow: hidden;
+}
+
+.main-stage .default-area {
+    position: relative;
+    display: table;
+    height: 100%;
+    width: 100%;
+    /* margin: 0 auto;
+    position:relative;
+    width: 80%;
+    float:left;
+    min-height: 652px; */
+}
+.main-stage .default-area .play {
+    background: url(../img/play.png) no-repeat;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    height: 38px;
+    width: 38px;
+}
+.main-stage .default-area .play:hover {
+    background-position: -38px 0;
+}
+.main-stage .default-place {
+    display: table-cell;
+    height: 100%;
+    width: 100%;
+    vertical-align: middle;
+}
+.toolbox .header{
+    border-top: 1px solid #747070;
+    border-left: 1px solid #434343;
+    background: #555252;
+    background: -webkit-gradient(linear,0 0,0 100%,from(#636060),to(#434343));
+    background: linear-gradient(to bottom,#636060 0%,#434343 100%);
+    height: 30px;
+    line-height: 30px;
+}
+.toolbox .header .item{
+    margin: 6px 0 0 6px;
+    width: 78px;
+    height: 24px;
+    line-height: 20px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+}
+.toolbox .header .item.current {
+    background: #f2f2f2;
+    color: #28292a;
+}
+#in-design .mod-titu .selected {
+    margin: -2px 0 0 -2px;
+    border: 2px solid #eb6100;
+    z-index: 100;
+}
+#in-design .mod-titu a.anchor {
+    background-color: rgba(64, 131, 169, 0.3)!important;
+    opacity: 1;
+}
+
+.img-hid-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    overflow: hidden;
+    z-index: 0;
+}
+.img-hid {
+    max-width: none;
+}
+
+.eleOpWrap {
+    border: solid 3px #eb6100;
+    display: inline-block;
+    position: absolute;
+}
+#in-design .tool-panel {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 22px;
+}
+#in-design .fn-panel {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: solid 3px #ec680c;
+    background: url(../img/opele.png);
+    cursor: pointer;
+}
+#in-design .del {
+    background-position: 0 0;
+}
+#in-design .setUp {
+    background-position: 0 -16px;
+}
+#in-design .setBottom {
+    background-position: 0 -32px;
+}
+
+/* 动画图层 */
+.animate-set .wrap,
+.anchor-set .wrap {
+    position: relative;
+}
+.anchor-set,
+.anchor-set .wrap {
+    height: 100%;
+}
+.animate-set .mask,
+.anchor-set .mask {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+.animate-set .am-header,
+.anchor-set .ac-header {
+    background-color: #dddedf;
+    padding: 0 10px;
+    height: 30px;
+    line-height: 30px;
+    color: #474748;
+    font-weight: 700;
+    cursor: pointer;
+}
+.animate-set .am-content,
+.anchor-set .ac-content {
+    position: relative;
+    padding: 5px;
+    overflow: hidden;
+}
+.animate-set .am-list {
+    position: absolute;
+    top: 5px;
+    background-color: #fff;
+    padding: 6px;
+    border: 1px solid #a0a0a0;
+    overflow-y: scroll;
+}
+.animate-set .am-normal .am-list {
+    bottom: 62px;
+}
+.animate-set .am-hover .am-list {
+    bottom: 45px;
+}
+.animate-set .am-list dt {
+    margin-top: 6px;
+    height: 24px;
+    line-height: 24px;
+    color: #666;
+}
+.animate-set .am-list dd {
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+.animate-set .am-list dd:last-child {
+    border-bottom: 0 none;
+}
+.animate-set .am-list li {
+    float: left;
+    margin: 5px;
+    width: 64px;
+    overflow: hidden;
+    text-align: center;
+}
+.animate-set .am-list li span {
+    display: block;
+    color: #999;
+}
+.animate-set .am-setting {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    width: 100%;
+}
+.animate-set .am-hover .am-setting {
+    bottom: 11px;
+}
+.animate-set .am-setting div {
+    margin-top: 6px;
+}
+.animate-set .am-setting input {
+    margin-right: 4px;
+    width: 54px;
+}
+.animate-set .am-setting .play {
+    position: absolute;
+    right: 10px;
+    top: 0;
+    padding: 0 20px;
+}
+.animate-set .am-normal .am-setting .play {
+    top: 12px;
+}
+.anchor-set .ac-content div {
+    margin-top: 6px;
+}
+.anchor-set .ac-content label {
+    display: inline-block;
+    width: 40px;
+    text-align: right;
+}
+.anchor-set .ac-content input {
+    width: 190px;
+}
+
+.guide-button {
+    display: inline-block;
+    width: 84px;
+    height: 23px;
+    line-height: 23px;
+    background: url(../img/bgBtn.png) no-repeat;
+    color: #fff;
+    border: 0 none;
+    padding-left: 16px;
+    cursor: pointer;
+}
+.guide-button:hover {
+    box-shadow: 2px 2px 2px #ccc,-2px -2px 2px #ccc;
+}
+.layout-row {
+    margin: 0 5px;
+    color: #999;
+    height: 36px;
+}
+.layout-title {
+    margin: 0 5px;
+    line-height: 30px;
+}
+.layout-strong {
+    color: #ff0000;
+}
+.layout-row .colorReviewWrap {
+    width: 18px;
+    height: 18px;
+    display: block;
+    border: solid 1px #a3a3a3;
+}
+.layout-row .colorReview {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: solid 1px #fff;
+}
+.layout-row .row {
+    display: inline-block;
+    vertical-align: middle;
+}
+.layout-row .input {
+    width: 140px;
+}
+.layout-row .btnUpadte {
+    margin-top: 4px;
+}
+.eleOpWrap{
+    border:solid 3px #eb6100;
+    display:inline-block;
+    position:absolute;
+}
+.eleOpWrap .fn-panel{
+    display:block;
+    width:16px;
+    height:16px;
+    border:solid 3px #ec680c;
+    position:absolute;
+    background:url(../img/opele.png);
+    cursor:pointer;
+}
+.eleOpWrap .del{
+    top:-3px;
+    right:-22px;
+    background-position:0 0;
+
+}
+.eleOpWrap .setUp{
+    top:20px;
+    right:-22px;
+    background-position:0 -16px;
+}
+.eleOpWrap .setBottom{
+    top:43px;
+    right:-22px;
+    background-position:0 -32px;
+}
+.an-list-icon{
+    display:block;
+    width:40px;
+    height:34px;
+    background:url(../img/icon.png) no-repeat;
+    margin:0 auto;
+}
+.an-list-icon00{background-position:0 0;}
+.an-list-icon01{background-position:0 -34px;}
+.an-list-icon02{background-position:-40px -34px;}
+.an-list-icon03{background-position:-80px -34px;}
+.an-list-icon04{background-position:-120px -34px;}
+.an-list-icon05{background-position:-160px -34px;}
+.an-list-icon06{background-position:-40px -68px;}
+.an-list-icon07{background-position:-80px -68px;}
+.an-list-icon08{background-position:-120px -68px;}
+.an-list-icon09{background-position:-160px -68px;}
+.an-list-icon06{background-position:-40px -102px;}
+.an-list-icon07{background-position:-80px -102px;}
+.an-list-icon08{background-position:-120px -102px;}
+.an-list-icon09{background-position:-160px -102px;}
