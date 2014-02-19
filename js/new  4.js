@@ -7,12 +7,9 @@
 jQuery.namespace('FE.tools.design');
 (function($, Design){
     var jq          = $,                // 这里使用jq而不是$,因为VM里$是关键字
-        doc = $(document),
-        win = $(window),
         animateIdx  = 1,                // 动画元素index
         anchorIdx   = 1,                // 锚点index
         currentTime = 0.1,              // 当前时间
-        currentZIndex = 1,              // 最大的zIndex
         vm          = null,
         emptyam     = {
             name             : '动画' + animateIdx,
@@ -21,18 +18,17 @@ jQuery.namespace('FE.tools.design');
             title            : '',
             beginTime        : currentTime,
             duration         : 1,
-            animateCount     : false,
             animateType      : '',
             top              : 0,
             left             : 0,
             height           : 0,
             width            : 0,
-            zIndex           : currentZIndex,
-            // hasHoverEvent    : false,
+            zIndex           : 0,
+            hasHoverEvent    : false,
             hoverAnimateType : ''
         },
-        currentAm = null,               // 当前选中的动画图层
-        $amMask = null,                 // 动画图层设置区遮罩
+        currentAm = null,
+        $amMask = null,
         emptyac = {
             className : 'anchor anchor-' + anchorIdx,
             title     : '',
@@ -40,23 +36,23 @@ jQuery.namespace('FE.tools.design');
             width     : 100,
             href      : '#',
             top       : 0,
-            left      : 0,
-            action    : false
+            left      : 0
         },
-        currentAc = null,               // 当前选中的热区
-        $acMask = null,                 // 热区设置区遮罩
-        $container = null,              // 题图动画容器
-        $titu = null,                   // 题图动画990部分
-        $mainStage = null,              // 动画画布，ko绑定节点
-        $background = null,             // 背景设置区
-        $animateSet = null,             // 动画图层设置区
-        $anchorSet = null,              // 热区设置区
-        playing = false,                // 是否在播放
+        doc = $(document),
+        win = $(window),
+        currentAc = null,
+        $acMask = null,
+        $container = null,
+        $titu = null,
+        $mainStage = null,
+        $background = null,
+        $animateSet = null,
+        $anchorSet = null,
         newAM = null,
         newCM = null,
-        hLen = 21,                      // 历史记录的长度
-        historys = [],                  // 历史记录
-        rHistorys = [];                 // 撤销历史记录
+        hLen = 21,          // 历史记录的长度
+        historys = [],      // 历史记录
+        rHistorys = [];     // 撤销历史记录
 
     /* 题图动画初始化函数 */
     var inDesign = {
@@ -67,48 +63,15 @@ jQuery.namespace('FE.tools.design');
 
             if( supportTrans ){
                 for ( var i in this ) {
-                    if (i !== 'init' ) {
+                    if (i !== 'init') {
                         this[i]();
                     }
                 }
             }else{ 
-                jq('#in-design div.mod-titu img.img').css('opacity', 1);
+                jq('img.img').css('opacity', 1);
             }
-        },
-        bookmark: function(){
-            jq.add('web-browser', {
-                js: ['http://style.c.aliimg.com/fdevlib/js/fdev-v4/widget/web/browser-min.js'],
-                ver: '1.0'
-            });
-
-            jq('#in-design div.mod-titu a.bookmark').click(function(e){
-                if( !playing ) return;
-                e.preventDefault();
-
-                jq.use('web-browser', function(){
-                    FE.util.addBookmark();
-                });
-            });
         }
     };
-
-    // 动画预览开始
-    // 编辑的时候添加editing class，保证无限循环的动画只播放一次
-    function start(){
-        $('#content').removeClass('editing');
-        $('#play-wrap header a.play').addClass('paused').attr('title', '暂停');
-    }
-
-    // 动画预览结束
-    // 播放结束时，添加paused class，设置animation-play-state: paused;暂停动画
-    function end(){
-        $('#content').addClass('editing').addClass('paused');
-        $('#play-wrap header a.play').removeClass('paused', '播放');
-
-        setTimeout(function(){
-            $('#content').removeClass('paused');
-        }, 100);
-    }
 
     // 题图数据模型
     function designModel () {
@@ -194,16 +157,15 @@ jQuery.namespace('FE.tools.design');
             this['title']            = ko.observable(obj.title);            // alt
             this['beginTime']        = ko.observable(obj.beginTime);        // 开始时间
             this['duration']         = ko.observable(obj.duration);         // 持续时间
-            this['animateCount']     = ko.observable(obj.animateCount);     // 动画播放次数
             this['animateType']      = ko.observable(obj.animateType);      // 动画类型
             this['top']              = ko.observable(obj.top);              // top
             this['left']             = ko.observable(obj.left);             // left
             this['height']           = ko.observable(obj.height);          
             this['width']            = ko.observable(obj.width);
             this['zIndex']           = ko.observable(obj.zIndex);
-            // this['hasHoverEvent']    = ko.observable(obj.hasHoverEvent);    // 是否有hover效果
+            this['hasHoverEvent']    = ko.observable(obj.hasHoverEvent);    // 是否有hover效果
             this['hoverAnimateType'] = ko.observable(obj.hoverAnimateType); // hover动画类型
-            this['disable']          = ko.observable(false);                // 编辑时删除的标识，实际数据中会删除
+            this['disable']          = ko.observable(false);
         }else{  // get
             this['name']             = ko.observable('动画' + animateIdx);
             this['className']        = ko.observable('img img-' + animateIdx);      // 动画img class
@@ -211,14 +173,13 @@ jQuery.namespace('FE.tools.design');
             this['title']            = ko.observable('');                           // alt
             this['beginTime']        = ko.observable(currentTime);                  // 开始时间
             this['duration']         = ko.observable(1);                            // 持续时间
-            this['animateCount']     = ko.observable(false);                        // 动画播放次数
             this['animateType']      = ko.observable('');                           // 动画类型
             this['top']              = ko.observable(0);                            // top
             this['left']             = ko.observable(0);                            // left
             this['height']           = ko.observable(0);          
             this['width']            = ko.observable(0);
-            this['zIndex']           = ko.observable(currentZIndex);
-            // this['hasHoverEvent']    = ko.observable(false);                        // 是否有hover效果
+            this['zIndex']           = ko.observable(0);
+            this['hasHoverEvent']    = ko.observable(false);                        // 是否有hover效果
             this['hoverAnimateType'] = ko.observable('');                           // hover动画类型
             this['disable']          = ko.observable(false);
         }
@@ -242,14 +203,6 @@ jQuery.namespace('FE.tools.design');
                           + 'animation-duration: ' + this.duration() + 's;';
                 }
 
-                if( this.animateCount() ){
-                    style = style + '-webkit-animation-iteration-count: infinite;'
-                          + '-moz-animation-iteration-count: infinite;'
-                          + '-o-animation-iteration-count: infinite;'
-                          + '-ms-animation-iteration-count: infinite;'
-                          + 'animation-iteration-count: infinite';
-                }
-
                 style = style + '}';
 
                 return style;
@@ -260,40 +213,34 @@ jQuery.namespace('FE.tools.design');
         // 题图动画js
         this.animateFn           = ko.computed({
             read: function(){
-                if( !this.disable() ){
+                if( !this.disable() && this.animateType() !== '' ){
                     var className = this.className().split(' ')[1],
                         fnStr = '',
                         _this = $('#in-design div.mod-titu img.' + className);
 
-                    if( this.animateType() !== '' && this.animateType() !== 'none' ){
-                        _this.removeClass().addClass('img ' + className + ' animated ' + this.animateType() );
+                    _this.removeClass().addClass('img ' + className + ' animated ' + this.animateType() );
 
-                        fnStr = "var _this = jQuery('#in-design div.mod-titu img." + className + "');";
-                        // fnStr = fnStr + "_this.css('opacity', 0);";
-                        fnStr = fnStr + "setTimeout(function(){ _this.css({ 'opacity': 1 }).addClass('animated " + this.animateType() + "');";
-                        fnStr = fnStr + "}, " + this.beginTime() * 1000 + ");";
+                    fnStr = "var _this = jQuery('#in-design div.mod-titu img." + className + "');";
+                    // fnStr = fnStr + "_this.css('opacity', 0);";
+                    fnStr = fnStr + "setTimeout(function(){ _this.css({ 'opacity': 1 }).addClass('animated " + this.animateType() + "');";
+                    fnStr = fnStr + "}, " + this.beginTime() * 1000 + ");";
 
-                        // hover动画
-                        // TODO hover的时间写的太死了，如何在编辑的时候阻止这个事件
-                        if( /*this.hasHoverEvent() && */this.hoverAnimateType() !== '' ){
-                            fnStr = fnStr + "setTimeout(function(){ _this.removeClass('animated " + this.animateType() + "');"
-                                  + "jQuery('#in-design').on('mouseenter.design', function(){ _this.addClass('animated " + this.hoverAnimateType() + "'); });"
-                                  + "jQuery('#in-design').on('mouseleave.design', function(){ _this.removeClass('animated " + this.hoverAnimateType() + "'); });"
-                                  + "}, 6000);"; 
-                        }
-
-                        inDesign[className] = new Function(fnStr);
-
-                        // inDesign[className]();
-                    }else{
-                        _this.hasClass('selected') ? _this.removeClass().addClass('img ' + className + ' selected') : _this.removeClass().addClass('img ' + className);
-
-                        inDesign[className] && delete inDesign[className];
+                    // hover动画
+                    // TODO hover的时间写的太死了，如何在编辑的时候阻止这个事件
+                    if( this.hasHoverEvent() && this.hoverAnimateType() !== '' ){
+                        fnStr = fnStr + "setTimeout(function(){ _this.removeClass('animated " + this.animateType() + "');"
+                              + "jQuery('#in-design').on('mouseenter.design', function(){ _this.addClass('animated " + this.hoverAnimateType() + "'); });"
+                              + "jQuery('#in-design').on('mouseleave.design', function(){ _this.removeClass('animated " + this.hoverAnimateType() + "'); });"
+                              + "}, 6000);"; 
                     }
+
+                    inDesign[className] = new Function(fnStr);
+
+                    inDesign[className]();
                 }
             },
             owner: this
-        }); 
+        });
     }
 
     // 锚点数据模型
@@ -307,7 +254,6 @@ jQuery.namespace('FE.tools.design');
             this['top']       = ko.observable(obj.top);          // top
             this['left']      = ko.observable(obj.left);         // left
             this['disable']   = ko.observable(false);
-            this['action']    = ko.observable(obj.action);       // 预设功能（现在只支持收藏页面）
         }else{
             this['className'] = ko.observable('anchor anchor-' + anchorIdx);
             this['title']     = ko.observable('');
@@ -317,36 +263,15 @@ jQuery.namespace('FE.tools.design');
             this['top']       = ko.observable(0);         // top
             this['left']      = ko.observable(0);         // left
             this['disable']   = ko.observable(false);
-            this['action']    = ko.observable(false);
         }
         
         // 锚点样式
         this['style']     = ko.computed({
             read: function(){
-                var style = '',
-                    className = '',
-                    id = '',
-                    _this = null;
-
-                className = this.className();
-                id = this.className().split(' ')[1];
-                _this = $('a.' + id, $titu);
-
-                // 通过添加class的方式添加收藏功能
-                if( this.action() ){
-                    if( className.indexOf('bookmark') === -1 ){
-                        this.className(className + ' ' + 'bookmark');
-                        _this.addClass('selected');
-                    }
-                }else{
-                    if( className.indexOf('bookmark') > -1 ){
-                        this.className(className.replace(' bookmark', ''));
-                        _this.addClass('selected');
-                    }
-                }
+                var style = '';
 
                 // ie9以下，链接会被png24的图片莫名覆盖
-                style = '#in-design .mod-titu .' + id + ' { top: ' + this.top() + 'px; left: ' + this.left() + 'px;' 
+                style = '#in-design .mod-titu .' + this.className().split(' ')[1] + ' { top: ' + this.top() + 'px; left: ' + this.left() + 'px;' 
                       + 'height: ' + this.height() + 'px; width: ' + this.width() + 'px; background-color: #fff; opacity: 0; filter:alpha(opacity=0); }';
 
                 return style;
@@ -386,14 +311,10 @@ jQuery.namespace('FE.tools.design');
         var style = '',
             html = '',
             js = '',
-            code = '',
-            isAnimate = false,
-            isBookmark = false,
-            fnObj = null,
-            i, len;
+            code = '';
 
         tool.hide();
-        // getModel();
+        getModel();
 
         // 清理动画元素上预览时产生的代码
         $('img.img', $titu).each(function(idx, el){
@@ -406,25 +327,12 @@ jQuery.namespace('FE.tools.design');
         
         // style
         style = $('.const-style').html() + $('.var-style').html();
-
-        // 去掉已删除标记为disable的元素style
-        $('img.img, a.anchor', $titu).each(function(idx, el){
-            var _this = $(el),
-                className = _this.attr('class').split(' ')[1],
-                reg;
-
-            if( _this.hasClass('disable') ){
-                reg = new RegExp('\\#in-design \\.mod-titu \\.' + className + ' \\{[\\s\\S]*?\\}', 'gi');
-                style = style.replace(reg, '');
-            }
-        });
-
         style = cssbeautify(style, {    // 格式化css
             indent        : '    ',
             autosemicolon : true
         });
         style = '<style type="text/css">' + '\n' + style + '</style>';
-        style = '<link rel="stylesheet" type="text/css" href="http://style.c.aliimg.com/fdevlib/css/gallery/animate/animate-min.css" />' + '\n' + style;
+        style = '<link rel="stylesheet" type="text/css" href="http://static.c.aliimg.com/css/app/operation/module/third/animate.css" />' + '\n' + style;
 
         // html
         html = $('#in-design').html();
@@ -435,34 +343,13 @@ jQuery.namespace('FE.tools.design');
         html = html.replace(/style=\".*?\"/gi, '');         // 去掉内联style
         html = html.replace(/aria-disabled=\".*?\"/gi, '');     // 去掉dragable添加的标识
         html = html.replace(/<div class=\"tool-panel.*?<\/div>/gi, '');    // 去掉toolPannel
-        html = html.replace(/<img .*?disable.*? \/>/gi, '');               // 去掉已删除标记为disable的元素
+        html = html.replace(/<img .*?disable.*? \/>/gi, '');
         html = html.replace(/<a .*?disable.*?>.*?<\/a>/gi, '');
-        html = '<div id="in-design">' + '\n' + html + '</div>';
-
-        // extend，因为不希望编辑中的收藏方法去掉
-        fnObj = $.extend(true, {}, inDesign);
-
-        // 判断是否有动画
-        for( i = 0, len = vm.animates().length; i < len; i++ ){
-            if( vm.animates()[i].animateType() !== '' && vm.animates()[i].animateType() !== 'none' ){
-                isAnimate = true;
-            }
-        }
-
-        // 判断是否有收藏页面热区，没有的话就删掉收藏方法
-        for( i = 0, len = vm.anchors().length; i < len; i++ ){
-            if( vm.anchors()[i].action() ){
-                isBookmark = true;
-            }
-        }  
-
-        if( !isBookmark ){
-            delete fnObj['bookmark'];
-        }
+        html = '<div id="in-design">' + '\n' + html + '</div>';    
 
         // 如果有题图动画元素，添加js
-        if( isAnimate || isBookmark ){
-            js = objectToString(fnObj);    
+        if( vm.animates().length > 0 ){
+            js = objectToString(inDesign);    
             js = '(function(jq){ var inDesign = ' + js + '; jq(function(){ inDesign.init(); }); })(jQuery);';
             js = js_beautify(js.replace(/\"(function(.*)\(\)\s*{.*})\"/g, '$1'));   // 将之前转换为字符串的function，先把双引号去掉
             js = '<script type="text/javascript" src="http://static.c.aliimg.com/js/app/operation/module/third/modernizr.min.js"></script>'
@@ -470,8 +357,6 @@ jQuery.namespace('FE.tools.design');
                // + 'if( typeof jQuery === "undefined" ){ alert("题图动画依赖于jQuery，请联系前端将fdev-min.js置于header里！"); }' + '\n'
                + js + '\n' + '</script>';
         }
-
-        js = js.replace('if (!playing) return;', '');
 
         code = style + '\n' + html + '\n' + js;
 
@@ -537,9 +422,7 @@ jQuery.namespace('FE.tools.design');
         ko.applyBindings(vm, $background[0]);
         ko.applyBindings(newAM, $animateSet[0]);
         ko.applyBindings(newCM, $anchorSet[0]);
-
-        fullScreen();
-        autoHeight();
+        
         bindEvent();
     }
 
@@ -563,7 +446,6 @@ jQuery.namespace('FE.tools.design');
             vmObj = JSON.parse(obj);
         }catch(ex){
             alert('请输入正确数据模型!');
-
             return;
         }
         
@@ -580,8 +462,6 @@ jQuery.namespace('FE.tools.design');
                 }
             }
         }
-
-        currentZIndex = vm.animates().length + 1;
 
         amL = vmObj['animates'].length;
         anL = vmObj['anchors'].length;
@@ -613,8 +493,6 @@ jQuery.namespace('FE.tools.design');
             ko.applyBindings(newCM, $anchorSet[0]);
         }
 
-        fullScreen();
-        autoHeight();
         setHistory('edit');
         bindEvent();
 
@@ -626,12 +504,10 @@ jQuery.namespace('FE.tools.design');
         // 添加动画图层
         $('div.action button', $animateSet).click(function(e){
             var am = null,
-                elem = null,
                 amObj = {
                     name      : '动画' + animateIdx,
                     className : 'img img-' + animateIdx,
-                    beginTime : currentTime,
-                    zIndex    : currentZIndex
+                    beginTime : currentTime
                 };
 
             e.preventDefault();
@@ -644,45 +520,42 @@ jQuery.namespace('FE.tools.design');
             ko.applyBindings(am, $animateSet[0]);
 
             // 动画效果列表高度是自适应的，所以要算一下
-            autoHeight();
+            $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
 
             // 绑定拖拽事件
-            elem = $('img.' + am.className().split(' ')[1], $titu);
+            $.use("ui-draggable", function(){
+                var elem = $('img.' + am.className().split(' ')[1], $titu);
 
-            elem.zoomAndMove({
-                isMove: true,
-                isZoom: false,
-                moveStart: function(info) {
-                    tool.container.hide();
-                },
-                moveEnd: function(info) {
-                    var _this = info.obj,
-                        ops = {};
+                elem.draggable({
+                    disabled: true,
+                    cursor: 'move',
+                    start :function(){
+                        tool.container.hide();
+                    },       
+                    stop: function(){
+                        var _this = $(this),
+                            idx = $('img', $titu).index(_this),
+                            ops = {};
 
-                    currentAm = am;     // 临时方案
+                        ops.oLeft = am.left();
+                        ops.oTop = am.top();
+                        am.left(parseInt(_this.css('left')));
+                        am.top(parseInt(_this.css('top'))); 
+                        ops.left = am.left();
+                        ops.top = am.top();    
+                        _this.attr('style', 'opacity: 1;');     // 去掉left、top的内联样式，否则键盘左右事件会失效（因为键盘左右改的也是style文件，样式会覆盖）
+                        
+                        tool.pos();
+                        setHistory('AMmove', ops);
+                    }
+                });
 
-                    ops.oLeft = am.left();
-                    ops.oTop = am.top();
-                    am.left(info.left);
-                    am.top(info.top); 
-                    ops.left = info.left;
-                    ops.top = info.top; 
-
-                    _this.attr('style', 'opacity: 1;');     // 去掉left、top的内联样式，否则键盘左右事件会失效（因为键盘左右改的也是style文件，样式会覆盖）
-                    tool.pos();
-                    setHistory('AMmove', ops);
-                },
-                always: function(){
-                    tool.container.show();
-                }
+                tool.show(elem);
             });
             
-            tool.show(elem);
-
             animateIdx++;
             // TODO: 这里应该加的是duration才比较好
             currentTime += 1;
-            currentZIndex += 1;
             setHistory('add');
 
             $amMask.hide();
@@ -690,36 +563,20 @@ jQuery.namespace('FE.tools.design');
 
         // 设置动画效果
         $animateSet.on('click', 'div.am-normal dl.am-list a', function(e){
-            var type = {};
-
             e.preventDefault();
 
-            $animateSet.find('div.am-normal dl.am-list a').removeClass('selected');
-            $(this).addClass('selected');
-            
-            type.oType = currentAm.animateType();
-            type.type = $(this).data('value');
-            currentAm.animateType(type.type);
-            setHistory('amType', type);
-
+            currentAm.animateType($(this).data('value'));
+            setHistory('amplay');
             tool.current && tool.current.addClass('selected');
         });
 
         // 设置hover动画效果
         $animateSet.on('click', 'div.am-hover dl.am-list a', function(e){
-            var type = {};
-
             e.preventDefault();
 
-            $animateSet.find('div.am-hover dl.am-list a').removeClass('selected');
-            $(this).addClass('selected');
-
-            type.oType = currentAm.hoverAnimateType();
-            type.type = $(this).data('value');
-            currentAm.hoverAnimateType(type.type);
-            // currentAm.hasHoverEvent(true);
-
-            setHistory('hoverType', type);
+            currentAm.hoverAnimateType($(this).data('value'));
+            setHistory('hover');
+            currentAm.hasHoverEvent(true);
         });
 
         // 动画效果预览
@@ -737,11 +594,7 @@ jQuery.namespace('FE.tools.design');
             parent = $(this).closest('div.am-content');
 
             if( parent.hasClass('am-normal') ){
-                // inDesign[className] && inDesign[className]();
-                setTimeout(function(){
-                    elem.addClass(' animated ' + currentAm.animateType());
-                }, 100);
-                
+                inDesign[className] && inDesign[className]();
             }else{
                 $titu.trigger('mouseenter.design');
             }
@@ -752,59 +605,11 @@ jQuery.namespace('FE.tools.design');
 
     // nav事件
     function navEvent(){
-        var nav = $('div.nav ul.options'),
-            preview = $('#play-wrap'),
-            previewContent = $('div.default-area', preview);
+        var nav = $('div.nav ul.options');
 
         $('a.bar-a-repeal', nav).on('click', repeal);
 
-        $('a.bar-a-recover', nav).on('click', recover);
-
-        $('a.bar-a-preview', nav).on('click', function(e){
-            e.preventDefault();
-
-            preview.addClass('md-modal');
-            previewContent.addClass('md-content');
-            
-            setTimeout(function(){
-                preview.addClass('md-show');
-
-                playing = true;
-                $('header a.play', preview).trigger('click');
-            }, 100);
-        });
-
-        $('header a.close', preview).click(function(e){
-            e.preventDefault();
-
-            preview.removeClass('md-show');
-
-            setTimeout(function(){
-                previewContent.removeClass('md-content');
-                preview.removeClass('md-modal');
-
-                playing = false;
-                end();
-            }, 100);
-        });
-
-        // 点击任何区域，结束播放
-        doc.on('click', function(e){
-            var _this = $(e.target);
-
-            if( $('#content').hasClass('editing') ){
-                return;
-            }
-
-            // 预览的时候不结束动画
-            if( preview.hasClass('md-modal') ){
-                return;
-            }
-
-            if( !_this.hasClass('play') && !_this.hasClass('bar-a-preview') ){
-                end();
-            }
-        });
+        $('a.bar-a-recover', nav).on('click', recover); 
     }
 
     function bindEvent(e){
@@ -832,26 +637,19 @@ jQuery.namespace('FE.tools.design');
         $titu.on('click', function(e){
             var _this = $(e.target);
             
-            if( !_this.hasClass('img') && !_this.hasClass('anchor') && !_this.closest('div.tool-panel').length && !_this.closest('a').hasClass('anchor') ){
+            if( !_this.hasClass('img') && !_this.hasClass('anchor') && !_this.closest('div.tool-panel').length ){
                 tool.hide();
             }
         });
 
         // 收缩展开
         $('#toolbox').on('click', 'div.am-header', function(){
-            $(this).toggleClass('expand').next('div.am-content').toggle(0, function(){
-                autoHeight(true);
-            });
-        });
-
-        $animateSet.on('click', 'dl.am-list dt', function(){
-            $(this).toggleClass('expand').next('dd').slideToggle();
+            $(this).next('div.am-content').slideToggle();
         });
 
         // 添加热区
         $('div.action button', $anchorSet).click(function(e){
             var ac = null,
-                elem = null,
                 acObj = {
                     className : 'anchor anchor-' + anchorIdx,
                 };
@@ -866,66 +664,35 @@ jQuery.namespace('FE.tools.design');
             ko.applyBindings(ac, $anchorSet[0]);
 
             // 绑定拖拽事件
-            elem = $('a.' + ac.className().split(' ')[1], $titu);
+            $.use("ui-draggable",function(){
+                var elem = $('a.' + ac.className().split(' ')[1], $titu);
 
-            // 绑定拖拽事件
-            elem.zoomAndMove({
-                isMove: true,
-                isZoom: true,
-                moveStart: function(info) {
-                    tool.container.hide();
-                },
-                moveEnd: function(info) {
-                    var _this = info.obj,
-                        ops = {};
+                elem.draggable({
+                    disabled: true,
+                    cursor: 'move',
+                    start: function(){
+                        tool.container.hide();
+                    },
+                    stop: function(){
+                        var _this = $(this),
+                            idx = $('a', $titu).index(_this),
+                            ops = {};
 
-                    currentAc = ac; // 临时方案
+                        ops.oLeft = ac.left();
+                        ops.oTop = ac.top();
+                        ac.left(parseInt(_this.css('left')));
+                        ac.top(parseInt(_this.css('top')));
+                        ops.left = ac.left();
+                        ops.top = ac.top();
 
-                    ops.oLeft = ac.left();
-                    ops.oTop = ac.top();
-                    ac.left(info.left);
-                    ac.top(info.top);
-                    ops.left = info.left;
-                    ops.top = info.top;
+                        _this.attr('style', '');
+                        tool.pos();
+                        setHistory('ACmove', ops);
+                    }
+                });
 
-                    _this.attr('style', '');
-                    tool.pos();
-                    setHistory('ACmove', ops);
-                },
-                zoomStart: function() {
-                    tool.container.hide();
-                },
-                zoomEnd: function(info) {
-                    var _this = info.obj,
-                        ops = {};
-
-                    currentAc = ac;     // 临时方案
-
-                    ops.oWidth = ac.width();
-                    ops.oHeight = ac.height();
-                    ac.width(info.width);
-                    ac.height(info.height);
-                    ops.width = info.width;
-                    ops.height = info.height;
-
-                    // zoom的时候可能既做zoom操作，又做了move的操作
-                    ops.oLeft = ac.left();
-                    ops.oTop = ac.top();
-                    ac.left(info.left);
-                    ac.top(info.top);
-                    ops.left = info.left;
-                    ops.top = info.top;
-
-                    _this.attr('style', '');
-                    tool.pos();
-                    setHistory('ACzoom', ops);
-                },
-                always: function(){
-                    tool.container.show();
-                }
+                tool.show(elem);
             });
-
-            tool.show(elem);
             
             anchorIdx++;
             setHistory('add');
@@ -937,106 +704,62 @@ jQuery.namespace('FE.tools.design');
         $('#content div.main-stage a.play').on('click', function(e){
             e.preventDefault();
 
-            if( $(this).hasClass('paused') ){
-                end();
-            }else{
-                start();
-
-                getHTML();
-                tool.hide();            
-                inDesign.init();    // 预览题图动画效果
-            }
+            getHTML();
+            tool.hide();            
+            inDesign.init();    // 预览题图动画效果
         });
 
         // 动画素材拖拽
-        $('img', $titu).zoomAndMove({
-            isMove: true,
-            isZoom: false,
-            moveStart: function(info) {
-                tool.container.hide();
-            },
-            moveEnd: function(info) {
-                var _this = info.obj,
-                    idx = $('img', $titu).index(_this),
-                    am = vm.animates()[idx];
-                    ops = {};
+        $.use("ui-draggable, ui-droppable", function(){
+            $('img', $titu).draggable({
+                disabled: true,
+                cursor: 'move',
+                start: function(){
+                    tool.container.hide();
+                },
+                stop: function(){
+                    var _this = $(this),
+                        idx = $('img', $titu).index(_this),
+                        am = vm.animates()[idx];
+                        ops = {};
 
-                currentAm = am;     // 临时方案
+                    ops.oLeft = am.left();
+                    ops.oTop = am.top();
+                    am.left(parseInt(_this.css('left')));
+                    am.top(parseInt(_this.css('top')));
+                    ops.left = am.left();
+                    ops.top = am.top();
+                    _this.attr('style', 'opacity: 1;');
 
-                ops.oLeft = am.left();
-                ops.oTop = am.top();
-                am.left(info.left);
-                am.top(info.top); 
-                ops.left = info.left;
-                ops.top = info.top;    
+                    tool.pos();
+                    setHistory('AMmove', ops);
+                }
+            });
 
-                _this.attr('style', 'opacity: 1;');     // 去掉left、top的内联样式，否则键盘左右事件会失效（因为键盘左右改的也是style文件，样式会覆盖）
-                tool.pos();
-                setHistory('AMmove', ops);
-            },
-            always: function(){
-                tool.container.show();
-            }
-        });
+            $('a.anchor', $titu).draggable({
+                disabled: true,
+                cursor: 'move',
+                start: function(){
+                    tool.container.hide();
+                },
+                stop: function(){
+                    var _this = $(this),
+                        idx = $('a', $titu).index(_this),
+                        cm = vm.anchors()[idx],
+                        ops = {};
 
-        $('a.anchor', $titu).zoomAndMove({
-            isMove: true,
-            isZoom: true,
-            moveStart: function(info) {
-                tool.container.hide();
-            },
-            moveEnd: function(info) {
-                var _this = info.obj,
-                    idx = $('a', $titu).index(_this),
-                    ac = vm.anchors()[idx],
-                    ops = {};
+                    ops.oLeft = cm.left();
+                    ops.oTop = cm.top();
+                    cm.left(parseInt(_this.css('left')));
+                    cm.top(parseInt(_this.css('top')));
+                    ops.left = cm.left();
+                    ops.top = cm.top();
 
-                currentAc = ac;     // 临时方案
-
-                ops.oLeft = ac.left();
-                ops.oTop = ac.top();
-                ac.left(info.left);
-                ac.top(info.top);
-                ops.left = info.left;
-                ops.top = info.top;
-
-                _this.attr('style', '');
-                tool.pos();
-                setHistory('ACmove', ops);
-            },
-            zoomStart: function() {
-                tool.container.hide();
-            },
-            zoomEnd: function(info) {
-                var _this = info.obj,
-                    idx = $('a', $titu).index(_this),
-                    ac = vm.anchors()[idx],
-                    ops = {};
-
-                currentAc = ac;     // 临时方案
-
-                ops.oWidth = ac.width();
-                ops.oHeight = ac.height();
-                ac.width(info.width);
-                ac.height(info.height);
-                ops.width = info.width;
-                ops.height = info.height;
-
-                // zoom的时候可能既做zoom操作，又做了move的操作
-                ops.oLeft = ac.left();
-                ops.oTop = ac.top();
-                ac.left(info.left);
-                ac.top(info.top);
-                ops.left = info.left;
-                ops.top = info.top;
-
-                _this.attr('style', '');
-                tool.pos();
-                setHistory('ACzoom', ops);
-            },
-            always: function(){
-                tool.container.show();
-            }
+                    _this.attr('style', '');
+                    tool.pos();
+                    setHistory('ACmove', ops);
+                }
+            });
         });
 
         // 背景图片修改自适应高度
@@ -1053,9 +776,7 @@ jQuery.namespace('FE.tools.design');
     // 撤销
     function repeal(e){
         var obj = null,
-            current = null,
-            idx,
-            len;
+            current = null;
 
         e.preventDefault();
 
@@ -1085,53 +806,31 @@ jQuery.namespace('FE.tools.design');
                 swap(current);
                 break;
             case 'delete':  // 删除
-                if( obj.am ){
-                    obj.am.disable(false);
-                    obj.am.className(obj.am.className().replace(' disable', ''));
+                if( obj.extra.am ){
+                    obj.extra.am.disable(false);
+                    obj.extra.am.className(obj.extra.am.className().replace(' disable', ''));
                 }
 
-                if( obj.cm ){
-                    obj.cm.disable(false);
-                    obj.cm.className(obj.cm.className().replace(' disable', ''));
+                if( obj.extra.cm ){
+                    obj.extra.cm.disable(false);
+                    obj.extra.cm.className(obj.extra.cm.className().replace(' disable', ''));
                 }
 
                 tool.hide();
                 swap(current);
-                obj.extra.am && zIndex('deleteR', obj.am);
                 break;
             case 'AMmove':  // 移动动画图层
-                obj.am.left(obj.extra.oLeft);
-                obj.am.top(obj.extra.oTop);
-                swap(current);
+                current.am.left(obj.extra.oLeft);
+                current.am.top(obj.extra.oTop);
                 tool.pos();
                 break;
             case 'ACmove':  // 移动热区
-                obj.cm.left(obj.extra.oLeft);
-                obj.cm.top(obj.extra.oTop);
-                swap(current);
+                current.ac.left(obj.extra.oLeft);
+                current.ac.top(obj.extra.oTop);
                 tool.pos();
                 break;
-            case 'zIndex':  // 上移下移图层
+            case 'zIndex':
                 obj.am.zIndex(obj.extra.oIndex);
-                obj.extra.oIndex > obj.extra.index ? zIndex('downR', obj.am) : zIndex('upR', obj.am);
-                swap(current);
-                tool.pos();
-                break;
-            case 'ACzoom':  // 缩放热区
-                obj.cm.left(obj.extra.oLeft);
-                obj.cm.top(obj.extra.oTop);
-                obj.cm.width(obj.extra.oWidth);
-                obj.cm.height(obj.extra.oHeight);
-                swap(current);
-                tool.pos();
-                break;
-            case 'amType':  // 动画类型
-                obj.am.animateType(obj.extra.oType);
-                swap(current);
-                break;
-            case 'hoverType':   // hover动画类型
-                obj.am.hoverAnimateType(obj.extra.oType);
-                swap(current);
                 break;
         }
 
@@ -1172,52 +871,32 @@ jQuery.namespace('FE.tools.design');
                 swap(current);
                 break;
             case 'delete':
-                if( current.am ){
-                    current.am.disable(true);
-                    current.am.className(current.am.className() + ' disable');
+                if( current.extra.am ){
+                    current.extra.am.disable(true);
+                    current.extra.am.className(current.extra.am.className() + ' disable');
                 }
 
-                if( current.cm ){
-                    current.cm.disable(true);
-                    current.cm.className(current.cm.className() + ' disable');
+                if( current.extra.cm ){
+                    current.extra.cm.disable(true);
+                    current.extra.cm.className(current.extra.cm.className() + ' disable');
                 }
 
                 tool.hide();
+
                 swap(current);
-                current.extra.am && zIndex('delete', current.am);
                 break;
             case 'AMmove':
                 current.am.left(current.extra.left);
                 current.am.top(current.extra.top);
-                swap(current);
                 tool.pos();
                 break;
             case 'ACmove':
-                current.cm.left(current.extra.left);
-                current.cm.top(current.extra.top);
-                swap(current);
+                current.ac.left(current.extra.left);
+                current.ac.top(current.extra.top);
                 tool.pos();
                 break;
             case 'zIndex':
                 current.am.zIndex(current.extra.index);
-                obj.extra.oIndex > obj.extra.index ? zIndex('down', current.am) : zIndex('up', current.am);
-                swap(current);
-                break;
-            case 'ACzoom':
-                current.cm.left(current.extra.left);
-                current.cm.top(current.extra.top);
-                current.cm.width(current.extra.width);
-                current.cm.height(current.extra.height);
-                swap(current);
-                tool.pos();
-                break;
-            case 'amType':
-                current.am.animateType(current.extra.type);
-                swap(current);
-                break;
-            case 'hoverType':
-                current.am.hoverAnimateType(current.extra.type);
-                swap(current);
                 break;
         }
 
@@ -1232,18 +911,17 @@ jQuery.namespace('FE.tools.design');
         }
 
         if( current.am ){
-            current.am.disable() || tool.show($('img.' + current.am.className().split(' ')[1], $titu));
+            tool.show($('img.' + current.am.className().split(' ')[1], $titu));
             ko.applyBindings(current.am, $animateSet[0]);
         }else{
             ko.applyBindings(newAM, $animateSet[0]);
         }
 
         // 动画效果列表高度是自适应的，所以要算一下
-        // $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
-        autoHeight();
+        $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
 
         if( current.cm ){
-            current.cm.disable() || tool.show($('a.' + current.cm.className().split(' ')[1], $titu));   
+            tool.show($('a.' + current.cm.className().split(' ')[1], $titu));   
             ko.applyBindings(current.cm, $anchorSet[0]);
         }else{
             ko.applyBindings(newCM, $anchorSet[0]);
@@ -1320,21 +998,19 @@ jQuery.namespace('FE.tools.design');
                 ac = null,
                 idx = 0,
                 pos;
-            
-            this.container.css('zIndex', elem.css('zIndex')); 
 
             if( this.current && this.current[0] == elem[0] ){
                 return;
             }
 
-            this.current && this.current.removeClass('selected')/*.draggable("disable")*/;
+            this.current && this.current.removeClass('selected').draggable("disable");
             this.container.removeClass('tool-panel-swap').hide();
             $amMask.show();
             $acMask.show();
 
             className = elem.attr('class').split(' ');
             this.type = className[0];
-            elem.addClass('selected')/*.draggable("enable")*/;
+            elem.addClass('selected').draggable("enable");
 
             this.current = elem;
             this.pos();
@@ -1346,13 +1022,12 @@ jQuery.namespace('FE.tools.design');
                 ko.applyBindings(am, $animateSet[0]);
                 currentAm = am;
 
-                if( $titu.find('img.img:not(.disable)').length > 1 ){
+                if( lists.length > 1 ){
                     this.container.addClass('tool-panel-swap');
                 }
 
                 // 动画效果列表高度是自适应的，所以要算一下
-                // $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
-                autoHeight();
+                $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
                 $amMask.hide();
             }else{
                 idx = $titu.find('a.anchor').index(elem);
@@ -1371,7 +1046,7 @@ jQuery.namespace('FE.tools.design');
                 return;
             }
 
-            // this.current.draggable("disable");
+            this.current.draggable("disable");
             this.current.removeClass('selected');
             this.container.hide();
             this.current = null;
@@ -1409,247 +1084,78 @@ jQuery.namespace('FE.tools.design');
                 className = classNameArr.join(' ');
 
                 if( self.type === 'img' ){
+                    /*vm.animates.remove(function(item) {
+                        return item.className() === className;
+                    });*/
                     currentAm.disable(true);
                     currentAm.className(currentAm.className() + ' disable');
 
                     current = $.extend(true, {}, currentAm);
-                    zIndex('delete', currentAm);
-                    setHistory('delete', {am: current});
                     currentAm = null;
+                    setHistory('delete', {am: current});
                     ko.applyBindings(newAM, $animateSet[0]);
-
-                    // $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
-                    autoHeight();
+                    $('div.am-content:gt(0)', $animateSet).height($animateSet.data('height'));
+                    // delete inDesign[classNameArr[1]];
                 }else{
+                    /*vm.anchors.remove(function(item) {
+                        return item.className() === className;
+                    });*/
                     currentAc.disable(true);
                     currentAc.className(currentAc.className() + ' disable');
 
                     current = $.extend(true, {}, currentAc);
-                    setHistory('delete', {cm: current});
                     currentAc = null;
+                    setHistory('delete', {cm: current});
                     ko.applyBindings(newCM, $anchorSet[0]);
                 }
             });
 
             // 上移
-            self.container.on('click', 'span.setUp', function(){
-                var _this = null,
-                    index = {};
+            self.container.find('span.setUp').click(function(){
+                var index = {};
 
                 if( !currentAm ){
                     return;
                 }
 
-                _this = $('img.' + currentAm.className().split(' ')[1], $titu);
-
                 index.oIndex = currentAm.zIndex();
-                if( !zIndex('up', currentAm) ) return;
+                currentAm.zIndex(currentAm.zIndex() + 1);
                 index.index = currentAm.zIndex();
-
-                // tool.show(_this);
+                
                 setHistory('zIndex', index);
             });
 
             // 下移
             self.container.find('span.setBottom').click(function(){
-                var _this = null,
-                    index = {};
+                var zIndex = 0;
 
                 if( !currentAm ){
                     return;
                 }
 
+                zIndex = currentAm.zIndex();
+
                 index.oIndex = currentAm.zIndex();
-                if( !zIndex('down', currentAm) ) return;
+                currentAm.zIndex(zIndex > 0 ? zIndex - 1 : 0);
                 index.index = currentAm.zIndex();
 
-                // tool.show(_this);
                 setHistory('zIndex', index);
             });
         }
     };
 
-    // 动画图层zIndex排序
-    function zIndex(op, am){
-        var idx = am.zIndex(),
-            i = 0,
-            len = vm.animates().length,
-            item = null,
-            current = vm.animates().indexOf(am),
-            itemIdx;
-
-        switch( op ){
-            case 'delete':
-                // 删除，比删除的zIndex大的都减1
-                for( ; i < len; i++ ){
-                    if( i === current ){
-                        continue;
-                    }
-
-                    item = vm.animates()[i];
-                    if( item.disable() ) continue;
-                    itemIdx = item.zIndex();
-
-                    if( itemIdx > idx ){
-                        item.zIndex(itemIdx - 1);
-                    }
-                }
-
-                currentZIndex--;
-                break;
-            case 'deleteR':
-                // 删除撤销，比删除的zIndex大的都加1
-                for( ; i < len; i++ ){
-                    if( i === current ){
-                        continue;
-                    }
-
-                    item = vm.animates()[i];
-                    if( item.disable() ) continue;
-                    itemIdx = item.zIndex();
-
-                    if( itemIdx >= idx ){
-                        item.zIndex(itemIdx + 1);
-                    }
-                }
-
-                currentZIndex++;
-                break;
-            case 'up':
-                // 上移，比我上层的减1
-                if( idx === currentZIndex - 1 ){
-                    return;
-                }
-
-                for( ; i < len; i++ ){
-                    if( i === current ){
-                        continue;
-                    }
-
-                    item = vm.animates()[i];
-                    if( item.disable() ) continue;
-                    itemIdx = item.zIndex();
-
-                    if( itemIdx > idx ){
-                        item.zIndex(itemIdx - 1);
-                    }
-                }
-
-                am.zIndex(currentZIndex - 1);
-                break;
-            case 'upR':
-                // 上移撤销，比我上层的加1
-                for( ; i < len; i++ ){
-                    if( i === current ){
-                        continue;
-                    }
-
-                    item = vm.animates()[i];
-                    if( item.disable() ) continue;
-                    itemIdx = item.zIndex();
-
-                    if( itemIdx >= idx ){
-                        item.zIndex(itemIdx + 1);
-                    }
-                }
-
-                break;
-            case 'down':
-                // 下移，比我下层的加1
-                if( idx === 1 ){
-                    return;
-                }
-
-                for( ; i < len; i++ ){
-                    if( i === current ){
-                        continue;
-                    }
-
-                    item = vm.animates()[i];
-                    if( item.disable() ) continue;
-                    itemIdx = item.zIndex();
-
-                    if( itemIdx < idx ){
-                        item.zIndex(itemIdx + 1);
-                    }
-                }
-
-                am.zIndex(1);
-                break;
-            case 'downR':
-                // 下移撤销，比我下层的减1
-                for( ; i < len; i++ ){
-                    if( i === current ){
-                        continue;
-                    }
-
-                    item = vm.animates()[i];
-                    if( item.disable() ) continue;
-                    itemIdx = item.zIndex();
-
-                    if( itemIdx <= idx ){
-                        item.zIndex(itemIdx - 1);
-                    }
-                }
-
-                break;
-        }
-
-        return true;
-    }
-
-    // 全屏
-    function fullScreen(){
-        var content = $('#content'),
-            oHeight = 0,
-            h = 0;
-
-        content.height(win.height() - 40);
-        oHeight = $animateSet.outerHeight() + $('#toolbox div.header').height();
-        h = (win.height() - 40 - oHeight);
-        // $('div.am-content:gt(0)', animateSet).height(h);
-        $animateSet.data('height', h);
-        autoHeight();
-
-        win.on('resize', function(){
-            content.height(win.height() - 40);
-            h = (win.height() - 40 - oHeight);
-            // $('div.am-content:gt(0)', animateSet).height(h);
-            $animateSet.data('height', h);
-            autoHeight();
-        });
-    }
-
-    // 动画图层高度自适应
-    function autoHeight(isToggle){
-        var height = $animateSet.data('height'),
-            amContent = $('div.am-content', $animateSet),
-            amContentGt0 = amContent.filter(':gt(0):visible'),
-            length = amContentGt0.length;
-
-        isToggle && amContent.addClass('toggle');
-
-        if( amContent.eq(0).is(':visible') ){
-            amContentGt0.height(height / length);
-        }else{
-            amContentGt0.height((height + 46) / length);
-        }
-
-        setTimeout(function(){
-            amContent.removeClass('toggle');
-        }, 300);
-    }
-
     // 上下左右微调
+    // TODO: 这块逻辑有点乱，不知道为什么拖拽的时候也会触发keydown事件
     function keydownIndesign(e){
         var _this = $('#in-design .selected'),
             idx = 0,
-            current = null,  
+            current = null,
             ops = {},
             left,
             top;
 
-        // e.preventDefault();
+        e.preventDefault();
+
         if( _this.length > 0 ){
             if( _this[0].tagName.toLowerCase() === 'img' ){
                 idx = $('img', $titu).index(_this);
@@ -1753,7 +1259,7 @@ jQuery.namespace('FE.tools.design');
     Design.edit =edit;
 
     $(function(){
-        $.use('ui-colorbox', function(){
+         $.use('ui-colorbox', function(){
             $('.colorBox').colorbox({
                 update: true,
                 triggerType: 'focus',
@@ -1772,8 +1278,6 @@ jQuery.namespace('FE.tools.design');
         $background = $('#content div.background');
         $animateSet = $('#animate-set');
         $anchorSet  = $('#anchor-set');
-
-        fullScreen();
     });
 
 })(jQuery, FE.tools.design);

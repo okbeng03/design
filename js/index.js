@@ -8,17 +8,27 @@
 	function pageOpen(){
 		var search = decodeURIComponent(location.search),
 			$setting = $('#settingDiv'),
-			isNew = true;
+			status = 'new';
 
 		if( search && search.toUpperCase().indexOf('PAGEID') > -1 ){
-			isNew = false;
+			status = 'edit';
 			dialog();
 		}else{
-			dialog();
+			status = 'new';
+			dialog('new');
 		}
 
 		function dialog(){
-			isNew || $setting.find('section div.pageid').show();
+			if( status !== 'new' ){
+				$setting.find('input').prop('disabled', true);
+				$setting.find('section div.pageid').show();
+
+				if( status === 'edit' ){
+					$setting.find('header h5').text('修改');
+				}else{
+					$setting.find('header h5').text('属性');
+				}
+			}
 
 			$.use('ui-dialog', function(){
 			    $setting.dialog({
@@ -28,23 +38,28 @@
 			});
 		}
 
-		$('header a.close, footer button.btn-cancel', $setting).click(function(e){
+		/*$('header a.close, footer button.btn-cancel', $setting).click(function(e){
 			e.preventDefault();
 
 			$setting.dialog('close');
-		});
+		});*/
 
 		$('footer button.btn-submit').click(function(e){
 			$setting.dialog('close');
 
 			// 新建 or 修改
-			if( isNew ){
+			if( status === 'new' ){
 				Design.add();
-			}else{
+			}else if( status === 'edit' ){
 				Design.edit(JSON.stringify(model));
 			}
-			
-			fullScreen();
+		});
+
+		$('div.nav a.bar-a-property').click(function(e){
+			e.preventDefault();
+
+			status = 'property';
+			dialog();
 		});
 	}	
 
@@ -54,7 +69,11 @@
 			snippetCode = null;
 
 		$('div.nav a.bar-a-code').one('click.codemirror', function(){
-			snippetCode = CodeMirror.fromTextArea($('section textarea', $snippet)[0], {
+			var textarea = $('section textarea', $snippet);
+
+			textarea.val(Design.getHTML());
+
+			snippetCode = CodeMirror.fromTextArea(textarea[0], {
 				lineNumbers  : true,
 				lineWrapping : true,
 				mode         : "xml",
@@ -62,12 +81,12 @@
 	        });
 
 	        $.use('ui-flash-clipboard', function() {
-                var styleObj = 'clipboard{text:复制代码;color:#fff;fontSize:12;font:12px/1.5 Tahoma,Arial,"宋体b8b\4f53",sans-serif;}';
+                var styleObj = 'clipboard{text:拷贝代码;color:#ffffff;fontWeight:700;fontSize:13;font-weight:bold;font: 12px/1.5 Tahoma,Arial,"宋体b8b\4f53",sans-serif;}';
                 
-                $snippet.find('footer a.submit').flash({
+                $snippet.find('header a.submit').flash({
                     module : 'clipboard',
-                    width: 68,
-                    height: 26,
+                    width: 164,
+                    height: 50,
                     flashvars : {
                         style : encodeURIComponent(styleObj)
                     }
@@ -81,6 +100,7 @@
 			e.preventDefault();
 
 			$snippet.addClass('md-show');
+			snippetCode.setValue(Design.getHTML());
 		});
 
 		$('a.close', $snippet).click(function(e){
@@ -91,8 +111,6 @@
 
 		$('footer a.submit', $snippet).click(function(e){
 			e.preventDefault();
-
-
 		});
 	}
 
@@ -135,42 +153,6 @@
 		}
 	};
 
-	// 全屏
-	function fullScreen(){
-		var win = $(window),
-			content = $('#content'),
-			animateSet = $('#animate-set'),
-			oHeight = 0,
-			h = 0;
-
-		content.height(win.height() - 40);
-		oHeight = animateSet.outerHeight() + $('#toolbox div.header').height();
-		h = (win.height() - 40 - oHeight) / 2;
-		$('div.am-content:gt(0)', animateSet).height(h);
-		animateSet.data('height', h);
-
-		win.on('resize', function(){
-			content.height(win.height() - 40);
-			h = (win.height() - 40 - oHeight) / 2;
-			$('div.am-content:gt(0)', animateSet).height(h);
-			animateSet.data('height', h);
-		});
-	}
-
-	function play(){
-		var container = $('#content div.main-stage');
-
-		$('div.nav a.bar-a-preview').click(function(e){
-			e.preventDefault();
-
-			container.addClass('md-modal md-effect-11');
-
-			setTimeout(function(){
-				container.addClass('md-show');
-			}, 300);
-		});
-	}
-
 	var model = {
 				    "designBgImg": "http://img.china.alibaba.com/cms/upload/2013/678/875/1578876_1625054590.jpg",
 				    "fixBgImg": "",
@@ -189,8 +171,7 @@
 				        "left": 51,
 				        "height": 0,
 				        "width": 0,
-				        "zIndex": 0,
-				        "hasHoverEvent": "",
+				        "zIndex": 1,
 				        "hoverAnimateType": ""
 				    }, {
 				        "name": "动画2",
@@ -204,17 +185,15 @@
 				        "left": 178,
 				        "height": 0,
 				        "width": 0,
-				        "hasHoverEvent": "",
+				        "zIndex": 2,
 				        "hoverAnimateType": ""
 				    }],
 				    "anchors": []
 				};
 
 	$(function(){
-		fullScreen();
 		pageOpen();
 		toolbox.init();
 		snippet();
-		// play();
 	});
 })(jQuery, FE.tools.design);
